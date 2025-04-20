@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.0.54]
+- @d4rk-lucif3r https://github.com/dnakov/anon-kode/pull/110
+- @panayao https://github.com/dnakov/anon-kode/pull/107
+
 ## [v0.0.53]
 - @andrewleech https://github.com/dnakov/anon-kode/pull/103
 - @panayao https://github.com/dnakov/anon-kode/pull/100

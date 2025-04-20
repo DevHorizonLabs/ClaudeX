@@ -341,34 +341,51 @@ export function ModelSelector({
         throw new Error(`HTTP error ${response.status}: ${response.statusText}`)
       }
 
-      let { data: models } = await response.json()
-
-      if (!models || !Array.isArray(models)) {
-        throw new Error(
-          'Invalid response from Ollama API: missing models array',
-        )
+      const responseData = await response.json()
+      
+      // Properly handle Ollama API response format
+      // Ollama API can return models in different formats based on version
+      let models = [];
+      
+      // Check if data field exists (newer Ollama versions)
+      if (responseData.data && Array.isArray(responseData.data)) {
+        models = responseData.data;
+      } 
+      // Check if models array is directly at the root (older Ollama versions)
+      else if (Array.isArray(responseData.models)) {
+        models = responseData.models;
+      } 
+      // If response is already an array
+      else if (Array.isArray(responseData)) {
+        models = responseData;
+      } 
+      else {
+        throw new Error('Invalid response from Ollama API: missing models array');
       }
 
       // Transform Ollama models to our format
       const ollamaModels = models.map((model: any) => ({
-        model: model.name ?? model.id,
+        model: model.name ?? model.id ?? (typeof model === 'string' ? model : ''),
         provider: 'ollama',
         max_tokens: 4096, // Default value
         supports_vision: false,
         supports_function_calling: true,
         supports_reasoning_effort: false,
       }))
+      
+      // Filter out models with empty names
+      const validModels = ollamaModels.filter(model => model.model);
 
-      setAvailableModels(ollamaModels)
+      setAvailableModels(validModels)
 
       // Only navigate if we have models
-      if (ollamaModels.length > 0) {
+      if (validModels.length > 0) {
         navigateTo('model')
       } else {
         setModelLoadError('No models found in your Ollama installation')
       }
 
-      return ollamaModels
+      return validModels
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error)

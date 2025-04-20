@@ -356,22 +356,31 @@ export async function getCompletion(
   const config = getGlobalConfig()
   const failedKeys = getSessionState('failedApiKeys')[type]
   const availableKeys = getApiKeys(config, type)
+  
+  const apiKeyRequired =
+    type === 'large'
+      ? config.largeModelApiKeyRequired
+      : config.smallModelApiKeyRequired
+  
+  // Only check for failed keys if API keys are required
   const allKeysFailed =
-    failedKeys.length === availableKeys.length && availableKeys.length > 0
+    apiKeyRequired && 
+    failedKeys.length === availableKeys.length && 
+    availableKeys.length > 0
 
   if (attempt >= maxAttempts || allKeysFailed) {
     throw new Error('Max attempts reached or all API keys failed')
   }
 
-  const apiKey = getActiveApiKey(config, type)
-  if (!apiKey || apiKey.trim() === '') {
-    return getCompletion(type, opts, attempt + 1, maxAttempts)
+  // Skip API key check for providers that don't require an API key (like Ollama)
+  if (!apiKeyRequired) {
+    // Continue with empty API key for providers like Ollama
+  } else {
+    const apiKey = getActiveApiKey(config, type)
+    if (!apiKey || apiKey.trim() === '') {
+      return getCompletion(type, opts, attempt + 1, maxAttempts)
+    }
   }
-
-  const apiKeyRequired =
-    type === 'large'
-      ? config.largeModelApiKeyRequired
-      : config.smallModelApiKeyRequired
   const baseURL =
     type === 'large' ? config.largeModelBaseURL : config.smallModelBaseURL
   const provider = config.primaryProvider
@@ -389,11 +398,17 @@ export async function getCompletion(
     'Content-Type': 'application/json',
   }
 
-  // Azure uses api-key header instead of Authorization: Bearer
-  if (isAzure) {
-    headers['api-key'] = apiKey
-  } else {
-    headers['Authorization'] = `Bearer ${apiKey}`
+  // Get API key if required
+  const apiKey = apiKeyRequired ? getActiveApiKey(config, type) : ''
+
+  // Add authorization headers if API key is required
+  if (apiKeyRequired) {
+    // Azure uses api-key header instead of Authorization: Bearer
+    if (isAzure) {
+      headers['api-key'] = apiKey
+    } else {
+      headers['Authorization'] = `Bearer ${apiKey}`
+    }
   }
 
   logEvent('get_completion', {
