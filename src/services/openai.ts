@@ -216,6 +216,8 @@ const MODEL_FEATURES: Record<string, ModelFeatures> = {
   'o1-mini': { usesMaxCompletionTokens: true },
   'o1-pro': { usesMaxCompletionTokens: true },
   'o3-mini': { usesMaxCompletionTokens: true },
+  o3: { usesMaxCompletionTokens: true },
+  'o4-mini': { usesMaxCompletionTokens: true },
 }
 
 // Helper to get model features based on model ID/name
@@ -429,8 +431,13 @@ export async function getCompletion(
   })
   opts = structuredClone(opts)
 
-  // Apply model-specific parameter transformations (e.g. max_tokens → max_completion_tokens for o1/o3 models)
+  // Apply model-specific parameter transformations (e.g. max_tokens → max_completion_tokens for o1/o3/o4 models)
   applyModelSpecificTransformations(opts)
+
+  // Ensure tool_choice is properly set for models that support tools
+  if (opts.tools && opts.tools.length > 0 && !opts.tool_choice) {
+    opts.tool_choice = 'auto'
+  }
 
   await applyModelErrorFixes(opts, baseURL)
 
