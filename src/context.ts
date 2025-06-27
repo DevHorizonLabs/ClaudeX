@@ -19,7 +19,7 @@ import { lastX } from './utils/generators'
 import { getGitEmail } from './utils/user'
 import { PROJECT_FILE } from './constants/product'
 /**
- * Find all KODING.md files in the current working directory
+ * Find all CLAUDEX.md files in the current working directory
  */
 export async function getClaudeFiles(): Promise<string | null> {
   const abortController = new AbortController()
@@ -34,7 +34,7 @@ export async function getClaudeFiles(): Promise<string | null> {
       return null
     }
 
-    // Add instructions for additional KODING.md files
+    // Add instructions for additional CLAUDEX.md files
     return `NOTE: Additional ${PROJECT_FILE} files were found. When working in these directories, make sure to read and follow the instructions in the corresponding ${PROJECT_FILE} file:\n${files
       .map(_ => path.join(getCwd(), _))
       .map(_ => `- ${_}`)

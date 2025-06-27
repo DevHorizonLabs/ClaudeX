@@ -5,7 +5,7 @@ import { Text } from 'ink'
 export function PressEnterToContinue(): React.ReactNode {
   return (
     <Text color={getTheme().permission}>
-      Press <Text bold>Enter</Text> to continue…
+      按 <Text bold>回车键</Text> 继续…
     </Text>
   )
 }

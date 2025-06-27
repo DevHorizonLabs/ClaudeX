@@ -6,7 +6,7 @@ import { PRODUCT_NAME } from '../constants/product'
 const bug = {
   type: 'local-jsx',
   name: 'bug',
-  description: `Submit feedback about ${PRODUCT_NAME}`,
+  description: `提交关于${PRODUCT_NAME}的反馈`,
   isEnabled: true,
   isHidden: false,
   async call(onDone) {

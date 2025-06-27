@@ -90,21 +90,21 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
   // Define all onboarding steps
   const themeStep = (
     <Box flexDirection="column" gap={1} paddingLeft={1}>
-      <Text>Let&apos;s get started.</Text>
+      <Text>让我们开始吧。</Text>
       <Box flexDirection="column">
-        <Text bold>Choose the option that looks best when you select it:</Text>
-        <Text dimColor>To change this later, run /config</Text>
+        <Text bold>选择您选中时看起来最好的选项：</Text>
+        <Text dimColor>要稍后更改此设置，请运行 /config</Text>
       </Box>
       <Select
         options={[
-          { label: 'Light text', value: 'dark' },
-          { label: 'Dark text', value: 'light' },
+          { label: '浅色文本', value: 'dark' },
+          { label: '深色文本', value: 'light' },
           {
-            label: 'Light text (colorblind-friendly)',
+            label: '浅色文本（色盲友好）',
             value: 'dark-daltonized',
           },
           {
-            label: 'Dark text (colorblind-friendly)',
+            label: '深色文本（色盲友好）',
             value: 'light-daltonized',
           },
         ]}
@@ -145,7 +145,7 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
     <Box flexDirection="column" gap={1} paddingLeft={1}>
       <Box flexDirection="column" width={70}>
         <Text color={theme.secondaryText}>
-          Next, let's select your preferred AI provider and model.
+          接下来，让我们选择您首选的 AI 提供商和模型。
         </Text>
       </Box>
       <ModelSelector onDone={handleProviderSelectionDone} />
@@ -154,38 +154,38 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
 
   const usageStep = (
     <Box flexDirection="column" gap={1} paddingLeft={1}>
-      <Text bold>Using {PRODUCT_NAME} effectively:</Text>
+      <Text bold>有效使用 {PRODUCT_NAME}：</Text>
       <Box flexDirection="column" width={70}>
-        <OrderedList children={[]}>
-          <OrderedList.Item children={[]}>
+        <OrderedList>
+          <OrderedList.Item>
             <Text>
-              Start in your project directory
+              从您的项目目录开始
               <Newline />
               <Text color={theme.secondaryText}>
-                Files are automatically added to context when needed.
+                需要时，文件会自动添加到上下文中。
               </Text>
               <Newline />
             </Text>
           </OrderedList.Item>
-          <OrderedList.Item children={[]}>
+          <OrderedList.Item>
             <Text>
-              Use {PRODUCT_NAME} as a development partner
+              将 {PRODUCT_NAME} 作为开发伙伴
               <Newline />
               <Text color={theme.secondaryText}>
-                Get help with file analysis, editing, bash commands,
+                获取文件分析、编辑、bash 命令
                 <Newline />
-                and git history.
+                和 git 历史的帮助。
                 <Newline />
               </Text>
             </Text>
           </OrderedList.Item>
-          <OrderedList.Item children={[]}>
+          <OrderedList.Item>
             <Text>
-              Provide clear context
+              提供清晰的上下文
               <Newline />
               <Text color={theme.secondaryText}>
-                Be as specific as you would with another engineer. <Newline />
-                The better the context, the better the results. <Newline />
+                像对待其他工程师一样具体明确。 <Newline />
+                上下文越好，结果越好。 <Newline />
               </Text>
             </Text>
           </OrderedList.Item>
@@ -197,20 +197,18 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
 
   const modelStep = (
     <Box flexDirection="column" gap={1} paddingLeft={1}>
-      <Text bold>Configure your models:</Text>
+      <Text bold>配置您的模型：</Text>
       <Box flexDirection="column" width={70}>
         <Text>
-          You can customize which models {PRODUCT_NAME} uses for different
-          tasks.
+          您可以自定义 {PRODUCT_NAME} 用于不同任务的模型。
           <Newline />
           <Text color={theme.secondaryText}>
-            Let's set up your preferred models for large and small tasks.
+            让我们为大型和小型任务设置您首选的模型。
           </Text>
         </Text>
         <Box marginTop={1}>
           <Text>
-            Press <Text color={theme.suggestion}>Enter</Text> to continue to the
-            model selection screen.
+            按 <Text color={theme.suggestion}>回车键</Text> 继续到模型选择屏幕。
           </Text>
         </Box>
       </Box>
@@ -235,9 +233,7 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
         <Box flexDirection="column" gap={1}>
           <Text bold>
             {PRODUCT_NAME}{' '}
-            {exitState.pending
-              ? `(press ${exitState.keyName} again to exit)`
-              : ''}
+            {exitState.pending ? `(再次按 ${exitState.keyName} 退出)` : ''}
           </Text>
           {steps[currentStepIndex]?.component}
         </Box>
@@ -256,8 +252,8 @@ export function WelcomeBox(): React.ReactNode {
       width={MIN_LOGO_WIDTH}
     >
       <Text>
-        <Text color={theme.claude}>✻</Text> Welcome to{' '}
-        <Text bold>{PRODUCT_NAME}</Text> research preview!
+        <Text color={theme.claude}>✻</Text> 欢迎使用{' '}
+        <Text bold>{PRODUCT_NAME}!</Text>
       </Text>
     </Box>
   )

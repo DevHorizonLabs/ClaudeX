@@ -52,9 +52,9 @@ export function isShiftEnterKeyBindingInstalled(): boolean {
 }
 
 export function handleHashCommand(interpreted: string): void {
-  // Appends the AI-interpreted content to KODING.md
+  // Appends the AI-interpreted content to CLAUDEX.md
   try {
-    const kodingPath = join(process.cwd(), 'KODING.md')
+    const kodingPath = join(process.cwd(), 'CLAUDEX.md')
 
     // Check if file exists, if not create it
     let existingContent = ''
@@ -86,12 +86,12 @@ export function handleHashCommand(interpreted: string): void {
     const newContent = `${existingContent}${separator}${interpreted}${timestamp}`
     writeFileSync(kodingPath, newContent, 'utf-8')
 
-    console.log(chalk.hex(getTheme().success)(`Added note to KODING.md`))
+    console.log(chalk.hex(getTheme().success)(`Added note to CLAUDEX.md`))
   } catch (e) {
     logError(e)
     console.error(
       chalk.hex(getTheme().error)(
-        `Failed to add note to KODING.md: ${e.message}`,
+        `Failed to add note to CLAUDEX.md: ${e.message}`,
       ),
     )
   }

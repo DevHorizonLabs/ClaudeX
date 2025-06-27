@@ -848,12 +848,19 @@ export default {
     },
   ],
   ollama: [],
+  openai_compatible: [], // 兼容 One-API / New-API，可通过 baseURL 获取模型列表
 }
 
 export const providers = {
   openai: {
     name: 'OpenAI',
     baseURL: 'https://api.openai.com/v1',
+  },
+  openai_compatible: {
+    name: 'OpenAI Compatible',
+    baseURL: '', // 需用户自定义，支持 One-API / New-API 兼容接口
+    description:
+      '主要用于兼容 one-api/new-api 的接口，可通过 baseURL 获取 models，需配置 baseURL 和 apiKey。',
   },
   openrouter: {
     name: 'OpenRouter',

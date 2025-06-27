@@ -169,19 +169,27 @@ export function ModelSelector({
   const [ollamaBaseUrlCursorOffset, setOllamaBaseUrlCursorOffset] =
     useState<number>(0)
 
+  // 1. 新增 openaiCompatibleBaseUrl 状态
+  const [openaiCompatibleBaseUrl, setOpenaiCompatibleBaseUrl] =
+    useState<string>('')
+  const [
+    openaiCompatibleBaseUrlCursorOffset,
+    setOpenaiCompatibleBaseUrlCursorOffset,
+  ] = useState<number>(0)
+
   // Model type options
   const modelTypeOptions = [
-    { label: 'Both Large and Small Models', value: 'both' },
-    { label: 'Large Model Only', value: 'large' },
-    { label: 'Small Model Only', value: 'small' },
+    { label: '同时配置大模型和小模型', value: 'both' },
+    { label: '仅配置大模型', value: 'large' },
+    { label: '仅配置小模型', value: 'small' },
   ]
 
   // Reasoning effort options
   const reasoningEffortOptions = [
-    { label: 'Low - Faster responses, less thorough reasoning', value: 'low' },
-    { label: 'Medium - Balanced speed and reasoning depth', value: 'medium' },
+    { label: '低 - 响应更快，推理较少', value: 'low' },
+    { label: '中 - 平衡速度与推理深度', value: 'medium' },
     {
-      label: 'High - Slower responses, more thorough reasoning',
+      label: '高 - 响应较慢，推理更深入',
       value: 'high',
     },
   ]
@@ -265,7 +273,7 @@ export function ModelSelector({
   function getProviderLabel(provider: string, modelCount: number): string {
     // Use provider names from the providers object if available
     if (providers[provider]) {
-      return `${providers[provider].name} ${providers[provider].status === 'wip' ? '(WIP)' : ''} (${modelCount} models)`
+      return `${providers[provider].name} ${providers[provider].status === 'wip' ? '(开发中)' : ''} (${modelCount} 个模型)`
     }
     return `${provider}`
   }
@@ -280,17 +288,16 @@ export function ModelSelector({
     setSelectedProvider(providerType)
 
     if (provider === 'custom') {
-      // For custom provider, save and exit
       saveConfiguration(
         providerType,
         selectedModel || config.largeModelName || '',
       )
       onDone()
     } else if (provider === 'ollama') {
-      // For Ollama, go to base URL configuration
       navigateTo('baseUrl')
+    } else if (provider === 'openai_compatible') {
+      navigateTo('apiKey')
     } else {
-      // For other providers, go to API key input
       navigateTo('apiKey')
     }
   }
@@ -342,39 +349,41 @@ export function ModelSelector({
       }
 
       const responseData = await response.json()
-      
+
       // Properly handle Ollama API response format
       // Ollama API can return models in different formats based on version
-      let models = [];
-      
+      let models = []
+
       // Check if data field exists (newer Ollama versions)
       if (responseData.data && Array.isArray(responseData.data)) {
-        models = responseData.data;
-      } 
+        models = responseData.data
+      }
       // Check if models array is directly at the root (older Ollama versions)
       else if (Array.isArray(responseData.models)) {
-        models = responseData.models;
-      } 
+        models = responseData.models
+      }
       // If response is already an array
       else if (Array.isArray(responseData)) {
-        models = responseData;
-      } 
-      else {
-        throw new Error('Invalid response from Ollama API: missing models array');
+        models = responseData
+      } else {
+        throw new Error(
+          'Invalid response from Ollama API: missing models array',
+        )
       }
 
       // Transform Ollama models to our format
       const ollamaModels = models.map((model: any) => ({
-        model: model.name ?? model.id ?? (typeof model === 'string' ? model : ''),
+        model:
+          model.name ?? model.id ?? (typeof model === 'string' ? model : ''),
         provider: 'ollama',
         max_tokens: 4096, // Default value
         supports_vision: false,
         supports_function_calling: true,
         supports_reasoning_effort: false,
       }))
-      
+
       // Filter out models with empty names
-      const validModels = ollamaModels.filter(model => model.model);
+      const validModels = ollamaModels.filter(model => model.model)
 
       setAvailableModels(validModels)
 
@@ -419,6 +428,11 @@ export function ModelSelector({
       // For Azure, skip model fetching and go directly to model input
       if (selectedProvider === 'azure') {
         navigateTo('modelInput')
+        return []
+      }
+
+      if (selectedProvider === 'openai_compatible') {
+        navigateTo('baseUrl')
         return []
       }
 
@@ -493,6 +507,12 @@ export function ModelSelector({
       return
     }
 
+    // For openai_compatible, go to baseUrl input next
+    if (selectedProvider === 'openai_compatible') {
+      navigateTo('baseUrl')
+      return
+    }
+
     // Fetch models with the provided API key
     fetchModels().catch(error => {
       setModelLoadError(`Error loading models: ${error.message}`)
@@ -533,6 +553,12 @@ export function ModelSelector({
     setActiveFieldIndex(0)
   }
 
+  // 2. 新增模型选择和参数流程状态
+  const [modelSelectionStep, setModelSelectionStep] = useState<
+    'large' | 'small' | 'done'
+  >('large')
+
+  // 3. 进入模型选择时根据 modelTypeToChange 控制流程
   function handleModelSelection(model: string) {
     setSelectedModel(model)
 
@@ -560,28 +586,56 @@ export function ModelSelector({
     setActiveFieldIndex(0)
   }
 
+  // 4. 参数设置提交时根据 modelTypeToChange 控制流程
   const handleModelParamsSubmit = () => {
-    // Values are already in state, no need to extract from form
-    // Navigate to confirmation screen
-    navigateTo('confirmation')
+    // 保存当前 step 的模型和参数
+    if (modelTypeToChange === 'both') {
+      if (modelSelectionStep === 'large') {
+        // 保存大模型配置
+        setLargeModelTemp({
+          model: selectedModel,
+          maxTokens,
+          reasoningEffort,
+        })
+        // 进入小模型选择
+        setModelSelectionStep('small')
+        setSelectedModel('')
+        setMaxTokens('')
+        setReasoningEffort('medium')
+        setSupportsReasoningEffort(false)
+        navigateTo('model')
+        return
+      } else if (modelSelectionStep === 'small') {
+        // 保存小模型配置
+        setSmallModelTemp({
+          model: selectedModel,
+          maxTokens,
+          reasoningEffort,
+        })
+        setModelSelectionStep('done')
+        navigateTo('confirmation')
+        return
+      }
+    } else {
+      // large 或 small 只需一次
+      navigateTo('confirmation')
+    }
   }
+
+  // 5. 新增临时状态保存 large/small 配置
+  const [largeModelTemp, setLargeModelTemp] = useState<any>(null)
+  const [smallModelTemp, setSmallModelTemp] = useState<any>(null)
 
   function saveConfiguration(provider: ProviderType, model: string) {
     let baseURL = providers[provider]?.baseURL || ''
-
-    // For Azure, construct the baseURL using the resource name
     if (provider === 'azure') {
       baseURL = `https://${resourceName}.openai.azure.com/openai/deployments/${model}`
-    }
-    // For Ollama, use the custom base URL
-    else if (provider === 'ollama') {
+    } else if (provider === 'ollama') {
       baseURL = ollamaBaseUrl
+    } else if (provider === 'openai_compatible') {
+      baseURL = openaiCompatibleBaseUrl
     }
-
-    // Create a new config object based on the existing one
     const newConfig = { ...config }
-
-    // Update the primary provider regardless of which model we're changing
     newConfig.primaryProvider = provider
 
     // Determine if the provider requires an API key
@@ -621,8 +675,6 @@ export function ModelSelector({
       }
       newConfig.smallModelApiKeyRequired = requiresApiKey
     }
-
-    // Save the updated configuration
     saveGlobalConfig(newConfig)
   }
 
@@ -780,6 +832,42 @@ export function ModelSelector({
     ]
   }
 
+  // 2. 新增 handleOpenaiCompatibleBaseUrlSubmit
+  function handleOpenaiCompatibleBaseUrlSubmit(url: string) {
+    setOpenaiCompatibleBaseUrl(url)
+    setIsLoadingModels(true)
+    setModelLoadError(null)
+
+    // 用 openai_compatible baseURL 拉取 models
+    const openai = new OpenAI({
+      apiKey: apiKey,
+      baseURL: url,
+      dangerouslyAllowBrowser: true,
+    })
+    openai.models
+      .list()
+      .then(response => {
+        const fetchedModels = response.data.map((model: any) => ({
+          model: model.id,
+          provider: 'openai_compatible',
+          max_tokens: model?.max_tokens,
+          supports_vision: false,
+          supports_function_calling: true,
+          supports_reasoning_effort: false,
+        }))
+        setAvailableModels(fetchedModels)
+        if (fetchedModels.length > 0) {
+          navigateTo('model')
+        } else {
+          setModelLoadError('未在该 baseURL 下发现可用模型')
+        }
+      })
+      .catch(error => {
+        setModelLoadError('拉取模型失败: ' + (error?.message || error))
+      })
+      .finally(() => setIsLoadingModels(false))
+  }
+
   // Render Model Type Selection Screen
   if (currentScreen === 'modelType') {
     return (
@@ -793,22 +881,17 @@ export function ModelSelector({
           paddingY={1}
         >
           <Text bold>
-            Model Selection{' '}
-            {exitState.pending
-              ? `(press ${exitState.keyName} again to exit)`
-              : ''}
+            模型选择{' '}
+            {exitState.pending ? `（再次按下${exitState.keyName}退出）` : ''}
           </Text>
           <Box flexDirection="column" gap={1}>
-            <Text bold>Which model(s) would you like to configure?</Text>
+            <Text bold>你想要配置哪些模型？</Text>
             <Box flexDirection="column" width={70}>
               <Text color={theme.secondaryText}>
-                You can configure both models to be the same, or set them
-                individually.
+                你可以将大模型和小模型配置为相同，也可以分别设置。
                 <Newline />
-                • Large model: Used for complex tasks requiring full
-                capabilities
-                <Newline />• Small model: Used for simpler tasks to save costs
-                and improve response times
+                • 大模型：用于需要完整能力的复杂任务
+                <Newline />• 小模型：用于简单任务以节省成本并提升响应速度
               </Text>
             </Box>
 
@@ -819,31 +902,31 @@ export function ModelSelector({
 
             <Box marginTop={1}>
               <Text dimColor>
-                Current configuration:
-                <Newline />• Large model:{' '}
+                当前配置：
+                <Newline />• 大模型:{' '}
                 <Text color={theme.suggestion}>
-                  {config.largeModelName || 'Not set'}
+                  {config.largeModelName || '未设置'}
                 </Text>
                 {config.largeModelName && (
                   <Text dimColor>
                     {' '}
-                    (
+                    （
                     {providers[config.primaryProvider]?.name ||
                       config.primaryProvider}
-                    )
+                    ）
                   </Text>
                 )}
-                <Newline />• Small model:{' '}
+                <Newline />• 小模型:{' '}
                 <Text color={theme.suggestion}>
-                  {config.smallModelName || 'Not set'}
+                  {config.smallModelName || '未设置'}
                 </Text>
                 {config.smallModelName && (
                   <Text dimColor>
                     {' '}
-                    (
+                    （
                     {providers[config.primaryProvider]?.name ||
                       config.primaryProvider}
-                    )
+                    ）
                   </Text>
                 )}
               </Text>
@@ -858,8 +941,8 @@ export function ModelSelector({
   if (currentScreen === 'apiKey') {
     const modelTypeText =
       modelTypeToChange === 'both'
-        ? 'both models'
-        : `your ${modelTypeToChange} model`
+        ? '两个模型'
+        : `你的${modelTypeToChange === 'large' ? '大模型' : '小模型'}`
 
     return (
       <Box flexDirection="column" gap={1}>
@@ -872,22 +955,26 @@ export function ModelSelector({
           paddingY={1}
         >
           <Text bold>
-            API Key Setup{' '}
-            {exitState.pending
-              ? `(press ${exitState.keyName} again to exit)`
-              : ''}
+            API Key 设置{' '}
+            {exitState.pending ? `（再次按下${exitState.keyName}退出）` : ''}
           </Text>
           <Box flexDirection="column" gap={1}>
             <Text bold>
-              Enter your {getProviderLabel(selectedProvider, 0).split(' (')[0]}{' '}
-              API key for {modelTypeText}:
+              请输入{getProviderLabel(selectedProvider, 0).split(' (')[0]}的API
+              Key，用于{modelTypeText}：
             </Text>
             <Box flexDirection="column" width={70}>
               <Text color={theme.secondaryText}>
-                This key will be stored locally and used to access the{' '}
-                {selectedProvider} API.
+                此密钥将被本地保存，用于访问{selectedProvider} API。
                 <Newline />
-                Your key is never sent to our servers.
+                你的密钥不会被上传到我们的服务器。
+                {selectedProvider === 'openai_compatible' && (
+                  <>
+                    <Newline />
+                    如果你的服务不需要 API Key，可以随意输入一个占位值（如
+                    "none"）。
+                  </>
+                )}
               </Text>
             </Box>
 
@@ -908,32 +995,27 @@ export function ModelSelector({
             <Box marginTop={1}>
               <Text>
                 <Text color={theme.suggestion} dimColor={!apiKey}>
-                  [Submit API Key]
+                  [提交 API Key]
                 </Text>
-                <Text>
-                  {' '}
-                  - Press Enter or click to continue with this API key
-                </Text>
+                <Text> - 按回车或点击以继续</Text>
               </Text>
             </Box>
 
             {isLoadingModels && (
               <Box>
-                <Text color={theme.suggestion}>
-                  Loading available models...
-                </Text>
+                <Text color={theme.suggestion}>正在加载可用模型...</Text>
               </Box>
             )}
             {modelLoadError && (
               <Box>
-                <Text color="red">Error: {modelLoadError}</Text>
+                <Text color="red">错误: {modelLoadError}</Text>
               </Box>
             )}
             <Box marginTop={1}>
               <Text dimColor>
-                Press <Text color={theme.suggestion}>Enter</Text> to continue,{' '}
-                <Text color={theme.suggestion}>Tab</Text> to skip using a key,
-                or <Text color={theme.suggestion}>Esc</Text> to go back
+                按 <Text color={theme.suggestion}>回车</Text> 继续，
+                <Text color={theme.suggestion}>Tab</Text> 跳过密钥，或
+                <Text color={theme.suggestion}>Esc</Text> 返回
               </Text>
             </Box>
           </Box>
@@ -946,8 +1028,8 @@ export function ModelSelector({
   if (currentScreen === 'model') {
     const modelTypeText =
       modelTypeToChange === 'both'
-        ? 'both large and small models'
-        : `your ${modelTypeToChange} model`
+        ? '大模型和小模型'
+        : `你的${modelTypeToChange === 'large' ? '大模型' : '小模型'}`
 
     return (
       <Box flexDirection="column" gap={1}>
@@ -960,47 +1042,55 @@ export function ModelSelector({
           paddingY={1}
         >
           <Text bold>
-            Model Selection{' '}
-            {exitState.pending
-              ? `(press ${exitState.keyName} again to exit)`
-              : ''}
+            模型选择{' '}
+            {exitState.pending ? `（再次按下${exitState.keyName}退出）` : ''}
           </Text>
+          {modelTypeToChange === 'both' && (
+            <Text color={theme.suggestion}>
+              {modelSelectionStep === 'large'
+                ? '正在设置 1大模型（用于复杂任务）'
+                : modelSelectionStep === 'small'
+                  ? '正在设置1小模型（用于简单任务）'
+                  : ''}
+            </Text>
+          )}
           <Box flexDirection="column" gap={1}>
             <Text bold>
-              Select a model from{' '}
+              请选择
               {
                 getProviderLabel(
                   selectedProvider,
                   availableModels.length,
                 ).split(' (')[0]
-              }{' '}
-              for {modelTypeText}:
+              }
+              的模型，用于{modelTypeText}：
             </Text>
             <Box flexDirection="column" width={70}>
               <Text color={theme.secondaryText}>
                 {modelTypeToChange === 'both' ? (
-                  <>
-                    This model will be used for both your primary interactions
-                    and simpler tasks.
-                  </>
+                  <>此模型将同时用于主要交互和简单任务。</>
                 ) : modelTypeToChange === 'large' ? (
-                  <>
-                    This model will be used for complex tasks requiring full
-                    capabilities.
-                  </>
+                  <>此模型将用于需要完整能力的复杂任务。</>
                 ) : (
-                  <>
-                    This model will be used for simpler tasks to save costs and
-                    improve response times.
-                  </>
+                  <>此模型将用于简单任务以节省成本并提升响应速度。</>
                 )}
               </Text>
             </Box>
 
             <Box marginY={1}>
-              <Text bold>Search models:</Text>
+              {modelTypeToChange === 'both' && (
+                <Text color={theme.suggestion}>
+                  {modelSelectionStep === 'large'
+                    ? '正在设置大模型（用于复杂任务）'
+                    : modelSelectionStep === 'small'
+                      ? '正在设置小模型（用于简单任务）'
+                      : ''}
+                  <Newline />
+                </Text>
+              )}
+              <Text bold>搜索模型：</Text>
               <TextInput
-                placeholder="Type to filter models..."
+                placeholder="输入以筛选模型..."
                 value={modelSearchQuery}
                 onChange={handleModelSearchChange}
                 columns={100}
@@ -1018,28 +1108,22 @@ export function ModelSelector({
                   onChange={handleModelSelection}
                 />
                 <Text dimColor>
-                  Showing {modelOptions.length} of {availableModels.length}{' '}
-                  models
+                  显示 {modelOptions.length} / {availableModels.length} 个模型
                 </Text>
               </>
             ) : (
               <Box>
                 {availableModels.length > 0 ? (
-                  <Text color="yellow">
-                    No models match your search. Try a different query.
-                  </Text>
+                  <Text color="yellow">没有匹配的模型，请尝试其他关键词。</Text>
                 ) : (
-                  <Text color="yellow">
-                    No models available for this provider.
-                  </Text>
+                  <Text color="yellow">当前提供商无可用模型。</Text>
                 )}
               </Box>
             )}
 
             <Box marginTop={1}>
               <Text dimColor>
-                Press <Text color={theme.suggestion}>Esc</Text> to go back to
-                API key input
+                按 <Text color={theme.suggestion}>Esc</Text> 返回
               </Text>
             </Box>
           </Box>
@@ -1063,18 +1147,15 @@ export function ModelSelector({
           paddingY={1}
         >
           <Text bold>
-            Model Parameters{' '}
-            {exitState.pending
-              ? `(press ${exitState.keyName} again to exit)`
-              : ''}
+            模型参数{' '}
+            {exitState.pending ? `（再次按下${exitState.keyName}退出）` : ''}
           </Text>
           <Box flexDirection="column" gap={1}>
-            <Text bold>Configure parameters for {selectedModel}:</Text>
+            <Text bold>为 {selectedModel} 配置参数：</Text>
             <Box flexDirection="column" width={70}>
               <Text color={theme.secondaryText}>
-                Use <Text color={theme.suggestion}>Tab</Text> to navigate
-                between fields. Press{' '}
-                <Text color={theme.suggestion}>Enter</Text> to submit.
+                使用 <Text color={theme.suggestion}>Tab</Text> 切换字段，按
+                <Text color={theme.suggestion}>回车</Text> 提交。
               </Text>
             </Box>
 
@@ -1089,11 +1170,21 @@ export function ModelSelector({
                           activeFieldIndex === index ? theme.success : undefined
                         }
                       >
-                        {field.label}
+                        {field.label === 'Maximum Tokens'
+                          ? '最大 Token 数'
+                          : field.label === 'Reasoning Effort'
+                            ? '推理深度'
+                            : field.label}
                       </Text>
                       {field.description && (
                         <Text color={theme.secondaryText}>
-                          {field.description}
+                          {field.description ===
+                          'Maximum tokens in response. Empty = default.'
+                            ? '回复的最大 token 数。留空为默认。'
+                            : field.description ===
+                                'Controls reasoning depth for complex problems.'
+                              ? '控制复杂问题的推理深度。'
+                              : field.description}
                         </Text>
                       )}
                     </>
@@ -1104,7 +1195,7 @@ export function ModelSelector({
                         activeFieldIndex === index ? theme.success : undefined
                       }
                     >
-                      {field.label}
+                      {field.label === 'Continue →' ? '继续 →' : field.label}
                     </Text>
                   )}
                   <Box marginY={1}>
@@ -1113,7 +1204,11 @@ export function ModelSelector({
                         <TextInput
                           value={maxTokens}
                           onChange={value => setMaxTokens(value)}
-                          placeholder={field.placeholder}
+                          placeholder={
+                            field.placeholder === 'Default'
+                              ? '默认'
+                              : field.placeholder
+                          }
                           columns={field.componentProps?.columns || 50}
                           showCursor={true}
                           focus={true}
@@ -1142,14 +1237,14 @@ export function ModelSelector({
                       ) : null
                     ) : field.name === 'maxTokens' ? (
                       <Text color={theme.secondaryText}>
-                        Current:{' '}
+                        当前：
                         <Text color={theme.suggestion}>
-                          {maxTokens || 'Default'}
+                          {maxTokens || '默认'}
                         </Text>
                       </Text>
                     ) : field.name === 'reasoningEffort' ? (
                       <Text color={theme.secondaryText}>
-                        Current:{' '}
+                        当前：
                         <Text color={theme.suggestion}>{reasoningEffort}</Text>
                       </Text>
                     ) : null}
@@ -1159,9 +1254,9 @@ export function ModelSelector({
 
               <Box marginTop={1}>
                 <Text dimColor>
-                  Press <Text color={theme.suggestion}>Tab</Text> to navigate,{' '}
-                  <Text color={theme.suggestion}>Enter</Text> to continue, or{' '}
-                  <Text color={theme.suggestion}>Esc</Text> to go back
+                  按 <Text color={theme.suggestion}>Tab</Text> 切换，
+                  <Text color={theme.suggestion}>回车</Text> 继续，或
+                  <Text color={theme.suggestion}>Esc</Text> 返回
                 </Text>
               </Box>
             </Box>
@@ -1184,20 +1279,17 @@ export function ModelSelector({
           paddingY={1}
         >
           <Text bold>
-            Azure Resource Setup{' '}
-            {exitState.pending
-              ? `(press ${exitState.keyName} again to exit)`
-              : ''}
+            Azure 资源设置{' '}
+            {exitState.pending ? `（再次按下${exitState.keyName}退出）` : ''}
           </Text>
           <Box flexDirection="column" gap={1}>
-            <Text bold>Enter your Azure OpenAI resource name:</Text>
+            <Text bold>请输入你的 Azure OpenAI 资源名称：</Text>
             <Box flexDirection="column" width={70}>
               <Text color={theme.secondaryText}>
-                This is the name of your Azure OpenAI resource (without the full
-                domain).
+                这是你的 Azure OpenAI 资源名称（不含完整域名）。
                 <Newline />
-                For example, if your endpoint is
-                "https://myresource.openai.azure.com", enter "myresource".
+                例如，如果你的端点是
+                "https://myresource.openai.azure.com"，请输入 "myresource"。
               </Text>
             </Box>
 
@@ -1217,16 +1309,16 @@ export function ModelSelector({
             <Box marginTop={1}>
               <Text>
                 <Text color={theme.suggestion} dimColor={!resourceName}>
-                  [Submit Resource Name]
+                  [提交资源名称]
                 </Text>
-                <Text> - Press Enter or click to continue</Text>
+                <Text> - 按回车或点击以继续</Text>
               </Text>
             </Box>
 
             <Box marginTop={1}>
               <Text dimColor>
-                Press <Text color={theme.suggestion}>Enter</Text> to continue or{' '}
-                <Text color={theme.suggestion}>Esc</Text> to go back
+                按 <Text color={theme.suggestion}>回车</Text> 继续，或
+                <Text color={theme.suggestion}>Esc</Text> 返回
               </Text>
             </Box>
           </Box>
@@ -1237,92 +1329,159 @@ export function ModelSelector({
 
   // Render Ollama Base URL Input Screen
   if (currentScreen === 'baseUrl') {
-    return (
-      <Box flexDirection="column" gap={1}>
-        <Box
-          flexDirection="column"
-          gap={1}
-          borderStyle="round"
-          borderColor={theme.secondaryBorder}
-          paddingX={2}
-          paddingY={1}
-        >
-          <Text bold>
-            Ollama Server Setup{' '}
-            {exitState.pending
-              ? `(press ${exitState.keyName} again to exit)`
-              : ''}
-          </Text>
-          <Box flexDirection="column" gap={1}>
-            <Text bold>Enter your Ollama server URL:</Text>
-            <Box flexDirection="column" width={70}>
-              <Text color={theme.secondaryText}>
-                This is the URL of your Ollama server.
-                <Newline />
-                Default is http://localhost:11434/v1 for local Ollama
-                installations.
-              </Text>
-            </Box>
-
-            <Box>
-              <TextInput
-                placeholder="http://localhost:11434/v1"
-                value={ollamaBaseUrl}
-                onChange={setOllamaBaseUrl}
-                onSubmit={handleOllamaBaseUrlSubmit}
-                columns={100}
-                cursorOffset={ollamaBaseUrlCursorOffset}
-                onChangeCursorOffset={setOllamaBaseUrlCursorOffset}
-                showCursor={!isLoadingModels}
-                focus={!isLoadingModels}
-              />
-            </Box>
-
-            <Box marginTop={1}>
-              <Text>
-                <Text
-                  color={
-                    isLoadingModels ? theme.secondaryText : theme.suggestion
-                  }
-                >
-                  [Submit Base URL]
-                </Text>
-                <Text> - Press Enter or click to continue</Text>
-              </Text>
-            </Box>
-
-            {isLoadingModels && (
-              <Box marginTop={1}>
-                <Text color={theme.success}>
-                  Connecting to Ollama server...
+    if (selectedProvider === 'ollama') {
+      return (
+        <Box flexDirection="column" gap={1}>
+          <Box
+            flexDirection="column"
+            gap={1}
+            borderStyle="round"
+            borderColor={theme.secondaryBorder}
+            paddingX={2}
+            paddingY={1}
+          >
+            <Text bold>
+              Ollama 服务器设置{' '}
+              {exitState.pending ? `（再次按下${exitState.keyName}退出）` : ''}
+            </Text>
+            <Box flexDirection="column" gap={1}>
+              <Text bold>请输入你的 Ollama 服务器地址：</Text>
+              <Box flexDirection="column" width={70}>
+                <Text color={theme.secondaryText}>
+                  这是你的 Ollama 服务器的地址。
+                  <Newline />
+                  本地 Ollama 默认地址为 http://localhost:11434/v1。
                 </Text>
               </Box>
-            )}
 
-            {modelLoadError && (
-              <Box marginTop={1}>
-                <Text color="red">Error: {modelLoadError}</Text>
+              <Box>
+                <TextInput
+                  placeholder="http://localhost:11434/v1"
+                  value={ollamaBaseUrl}
+                  onChange={setOllamaBaseUrl}
+                  onSubmit={handleOllamaBaseUrlSubmit}
+                  columns={100}
+                  cursorOffset={ollamaBaseUrlCursorOffset}
+                  onChangeCursorOffset={setOllamaBaseUrlCursorOffset}
+                  showCursor={!isLoadingModels}
+                  focus={!isLoadingModels}
+                />
               </Box>
-            )}
 
-            <Box marginTop={1}>
-              <Text dimColor>
-                Press <Text color={theme.suggestion}>Enter</Text> to continue or{' '}
-                <Text color={theme.suggestion}>Esc</Text> to go back
-              </Text>
+              <Box marginTop={1}>
+                <Text>
+                  <Text
+                    color={
+                      isLoadingModels ? theme.secondaryText : theme.suggestion
+                    }
+                  >
+                    [提交服务器地址]
+                  </Text>
+                  <Text> - 按回车或点击以继续</Text>
+                </Text>
+              </Box>
+
+              {isLoadingModels && (
+                <Box marginTop={1}>
+                  <Text color={theme.success}>正在连接 Ollama 服务器...</Text>
+                </Box>
+              )}
+
+              {modelLoadError && (
+                <Box marginTop={1}>
+                  <Text color="red">错误: {modelLoadError}</Text>
+                </Box>
+              )}
+
+              <Box marginTop={1}>
+                <Text dimColor>
+                  按 <Text color={theme.suggestion}>回车</Text> 继续，或
+                  <Text color={theme.suggestion}>Esc</Text> 返回
+                </Text>
+              </Box>
             </Box>
           </Box>
         </Box>
-      </Box>
-    )
+      )
+    } else if (selectedProvider === 'openai_compatible') {
+      return (
+        <Box flexDirection="column" gap={1}>
+          <Box
+            flexDirection="column"
+            gap={1}
+            borderStyle="round"
+            borderColor={theme.secondaryBorder}
+            paddingX={2}
+            paddingY={1}
+          >
+            <Text bold>
+              OpenAI 兼容 API 设置{' '}
+              {exitState.pending ? `（再次按下${exitState.keyName}退出）` : ''}
+            </Text>
+            <Box flexDirection="column" gap={1}>
+              <Text bold>请输入你的 OpenAI 兼容 API baseURL：</Text>
+              <Box flexDirection="column" width={70}>
+                <Text color={theme.secondaryText}>
+                  这是你的 one-api/new-api 兼容服务的 baseURL，例如
+                  http://localhost:3000/v1。
+                  <Newline />
+                  需确保该地址可用且已配置 API Key。
+                </Text>
+              </Box>
+              <Box>
+                <TextInput
+                  placeholder="http://localhost:3000/v1"
+                  value={openaiCompatibleBaseUrl}
+                  onChange={setOpenaiCompatibleBaseUrl}
+                  onSubmit={handleOpenaiCompatibleBaseUrlSubmit}
+                  columns={100}
+                  cursorOffset={openaiCompatibleBaseUrlCursorOffset}
+                  onChangeCursorOffset={setOpenaiCompatibleBaseUrlCursorOffset}
+                  showCursor={!isLoadingModels}
+                  focus={!isLoadingModels}
+                />
+              </Box>
+              <Box marginTop={1}>
+                <Text>
+                  <Text
+                    color={
+                      isLoadingModels ? theme.secondaryText : theme.suggestion
+                    }
+                  >
+                    [提交 baseURL]
+                  </Text>
+                  <Text> - 按回车或点击以继续</Text>
+                </Text>
+              </Box>
+              {isLoadingModels && (
+                <Box marginTop={1}>
+                  <Text color={theme.success}>正在连接 OpenAI 兼容 API...</Text>
+                </Box>
+              )}
+              {modelLoadError && (
+                <Box marginTop={1}>
+                  <Text color="red">错误: {modelLoadError}</Text>
+                </Box>
+              )}
+              <Box marginTop={1}>
+                <Text dimColor>
+                  按 <Text color={theme.suggestion}>回车</Text> 继续，或
+                  <Text color={theme.suggestion}>Esc</Text> 返回
+                </Text>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+      )
+    }
   }
 
   // Render Custom Model Input Screen
   if (currentScreen === 'modelInput') {
     const modelTypeText =
       modelTypeToChange === 'both'
-        ? 'both large and small models'
-        : `your ${modelTypeToChange} model`
+        ? '大模型和小模型'
+        : `你的${modelTypeToChange === 'large' ? '大模型' : '小模型'}`
 
     return (
       <Box flexDirection="column" gap={1}>
@@ -1335,21 +1494,18 @@ export function ModelSelector({
           paddingY={1}
         >
           <Text bold>
-            Azure Model Setup{' '}
-            {exitState.pending
-              ? `(press ${exitState.keyName} again to exit)`
-              : ''}
+            Azure 模型设置{' '}
+            {exitState.pending ? `（再次按下${exitState.keyName}退出）` : ''}
           </Text>
           <Box flexDirection="column" gap={1}>
             <Text bold>
-              Enter your Azure OpenAI deployment name for {modelTypeText}:
+              请输入 Azure OpenAI 部署名称，用于{modelTypeText}：
             </Text>
             <Box flexDirection="column" width={70}>
               <Text color={theme.secondaryText}>
-                This is the deployment name you configured in your Azure OpenAI
-                resource.
+                这是你在 Azure OpenAI 资源中配置的部署名称。
                 <Newline />
-                For example: "gpt-4", "gpt-35-turbo", etc.
+                例如："gpt-4"、"gpt-35-turbo" 等。
               </Text>
             </Box>
 
@@ -1369,16 +1525,16 @@ export function ModelSelector({
             <Box marginTop={1}>
               <Text>
                 <Text color={theme.suggestion} dimColor={!customModelName}>
-                  [Submit Model Name]
+                  [提交模型名称]
                 </Text>
-                <Text> - Press Enter or click to continue</Text>
+                <Text> - 按回车或点击以继续</Text>
               </Text>
             </Box>
 
             <Box marginTop={1}>
               <Text dimColor>
-                Press <Text color={theme.suggestion}>Enter</Text> to continue or{' '}
-                <Text color={theme.suggestion}>Esc</Text> to go back
+                按 <Text color={theme.suggestion}>回车</Text> 继续，或
+                <Text color={theme.suggestion}>Esc</Text> 返回
               </Text>
             </Box>
           </Box>
@@ -1401,7 +1557,8 @@ export function ModelSelector({
     )[0]
 
     // Determine if provider requires API key
-    const showsApiKey = selectedProvider !== 'ollama'
+    const showsApiKey =
+      selectedProvider !== 'ollama' && selectedProvider !== 'openai_compatible'
 
     return (
       <Box flexDirection="column" gap={1}>
@@ -1414,56 +1571,57 @@ export function ModelSelector({
           paddingY={1}
         >
           <Text bold>
-            Configuration Confirmation{' '}
-            {exitState.pending
-              ? `(press ${exitState.keyName} again to exit)`
-              : ''}
+            配置确认{' '}
+            {exitState.pending ? `（再次按下${exitState.keyName}退出）` : ''}
           </Text>
           <Box flexDirection="column" gap={1}>
-            <Text bold>Confirm your model configuration:</Text>
+            <Text bold>请确认你的模型配置：</Text>
             <Box flexDirection="column" width={70}>
-              <Text color={theme.secondaryText}>
-                Please review your selections before saving.
-              </Text>
+              <Text color={theme.secondaryText}>请在保存前检查你的选择。</Text>
             </Box>
 
             <Box flexDirection="column" marginY={1} paddingX={1}>
               <Text>
-                <Text bold>Provider: </Text>
+                <Text bold>提供商: </Text>
                 <Text color={theme.suggestion}>{providerDisplayName}</Text>
               </Text>
 
               {selectedProvider === 'azure' && (
                 <Text>
-                  <Text bold>Resource Name: </Text>
+                  <Text bold>资源名称: </Text>
                   <Text color={theme.suggestion}>{resourceName}</Text>
                 </Text>
               )}
 
               {selectedProvider === 'ollama' && (
                 <Text>
-                  <Text bold>Server URL: </Text>
+                  <Text bold>服务器地址: </Text>
                   <Text color={theme.suggestion}>{ollamaBaseUrl}</Text>
                 </Text>
               )}
 
-              {updatingLarge && (
+              {selectedProvider === 'openai_compatible' && (
                 <Text>
-                  <Text bold>Large Model: </Text>
-                  <Text color={theme.suggestion}>{selectedModel}</Text>
-                  <Text dimColor> (for complex tasks)</Text>
+                  <Text bold>baseURL: </Text>
+                  <Text color={theme.suggestion}>
+                    {openaiCompatibleBaseUrl}
+                  </Text>
                 </Text>
               )}
 
-              {updatingSmall && (
+              {modelTypeToChange === 'both' && largeModelTemp && (
                 <Text>
-                  <Text bold>Small Model: </Text>
-                  <Text color={theme.suggestion}>
-                    {modelTypeToChange === 'both'
-                      ? selectedModel
-                      : config.smallModelName || 'Not set'}
-                  </Text>
-                  <Text dimColor> (for simpler tasks)</Text>
+                  <Text bold>大模型: </Text>
+                  <Text color={theme.suggestion}>{largeModelTemp.model}</Text>
+                  <Text dimColor>（用于复杂任务）</Text>
+                </Text>
+              )}
+
+              {modelTypeToChange === 'both' && smallModelTemp && (
+                <Text>
+                  <Text bold>小模型: </Text>
+                  <Text color={theme.suggestion}>{smallModelTemp.model}</Text>
+                  <Text dimColor>（用于简单任务）</Text>
                 </Text>
               )}
 
@@ -1476,14 +1634,14 @@ export function ModelSelector({
 
               {maxTokens && (
                 <Text>
-                  <Text bold>Max Tokens: </Text>
+                  <Text bold>最大 Token 数: </Text>
                   <Text color={theme.suggestion}>{maxTokens}</Text>
                 </Text>
               )}
 
               {supportsReasoningEffort && (
                 <Text>
-                  <Text bold>Reasoning Effort: </Text>
+                  <Text bold>推理深度: </Text>
                   <Text color={theme.suggestion}>{reasoningEffort}</Text>
                 </Text>
               )}
@@ -1491,9 +1649,8 @@ export function ModelSelector({
 
             <Box marginTop={1}>
               <Text dimColor>
-                Press <Text color={theme.suggestion}>Esc</Text> to go back to
-                model parameters or <Text color={theme.suggestion}>Enter</Text>{' '}
-                to save configuration
+                按 <Text color={theme.suggestion}>Esc</Text> 返回模型参数，或
+                <Text color={theme.suggestion}>回车</Text> 保存配置
               </Text>
             </Box>
           </Box>
@@ -1514,28 +1671,26 @@ export function ModelSelector({
         paddingY={1}
       >
         <Text bold>
-          Provider Selection{' '}
-          {exitState.pending
-            ? `(press ${exitState.keyName} again to exit)`
-            : ''}
+          提供商选择{' '}
+          {exitState.pending ? `（再次按下${exitState.keyName}退出）` : ''}
         </Text>
         <Box flexDirection="column" gap={1}>
           <Text bold>
-            Select your preferred AI provider for{' '}
+            请选择你想要用于
             {modelTypeToChange === 'both'
-              ? 'both models'
-              : `your ${modelTypeToChange} model`}
-            :
+              ? '两个模型'
+              : `你的${modelTypeToChange === 'large' ? '大模型' : '小模型'}`}
+            的 AI 提供商：
           </Text>
           <Box flexDirection="column" width={70}>
             <Text color={theme.secondaryText}>
-              Choose the provider you want to use for{' '}
+              选择你想要用于
               {modelTypeToChange === 'both'
-                ? 'both large and small models'
-                : `your ${modelTypeToChange} model`}
-              .
+                ? '大模型和小模型'
+                : `你的${modelTypeToChange === 'large' ? '大模型' : '小模型'}`}
+              的提供商。
               <Newline />
-              This will determine which models are available to you.
+              这将决定你可用的模型列表。
             </Text>
           </Box>
 
@@ -1546,8 +1701,8 @@ export function ModelSelector({
 
           <Box marginTop={1}>
             <Text dimColor>
-              You can change this later by running{' '}
-              <Text color={theme.suggestion}>/model</Text> again
+              你可以稍后通过运行 <Text color={theme.suggestion}>/model</Text>{' '}
+              再次更改
             </Text>
           </Box>
         </Box>

@@ -33,7 +33,7 @@ async function interpretHashCommand(input: string): Promise<string> {
 
     // Create a prompt for the model to interpret the hash command
     const systemPrompt = [
-      "You're helping the user structure notes that will be added to their KODING.md file.",
+      "You're helping the user structure notes that will be added to their CLAUDEX.md file.",
       "Format the user's input into a well-structured note that will be useful for later reference.",
       'Add appropriate markdown formatting, headings, bullet points, or other structural elements as needed.',
       'The goal is to transform the raw note into something that will be more useful when reviewed later.',
@@ -43,7 +43,7 @@ async function interpretHashCommand(input: string): Promise<string> {
     // Send the request to the AI
     const result = await queryHaiku({
       systemPrompt,
-      userPrompt: `Transform this note for KODING.md: ${input}`,
+      userPrompt: `Transform this note for CLAUDEX.md: ${input}`,
     })
 
     // Extract the content from the response
@@ -216,9 +216,9 @@ function PromptInput({
         addToHistory(mode === 'koding' ? `#${input}` : input)
         onInputChange('')
 
-        // Create additional context to inform Claude this is for KODING.md
+        // Create additional context to inform Claude this is for CLAUDEX.md
         const kodingContext =
-          'The user is using Koding mode. Format your response as a comprehensive, well-structured document suitable for adding to KODING.md. Use proper markdown formatting with headings, lists, code blocks, etc. The response should be complete and ready to add to KODING.md documentation.'
+          'The user is using Koding mode. Format your response as a comprehensive, well-structured document suitable for adding to CLAUDEX.md. Use proper markdown formatting with headings, lists, code blocks, etc. The response should be complete and ready to add to CLAUDEX.md documentation.'
 
         // Switch to prompt mode but tag the submission for later capture
         onModeChange('prompt')
@@ -273,7 +273,7 @@ function PromptInput({
       }
     }
 
-    // If in koding mode or input starts with '#', interpret it using AI before appending to KODING.md
+    // If in koding mode or input starts with '#', interpret it using AI before appending to CLAUDEX.md
     else if (mode === 'koding' || input.startsWith('#')) {
       try {
         // Strip the # if we're in koding mode and the user didn't type it (since it's implied)
@@ -491,7 +491,7 @@ function PromptInput({
                   color={mode === 'koding' ? theme.koding : undefined}
                   dimColor={mode !== 'koding'}
                 >
-                  · # for KODING.md
+                  · # for CLAUDEX.md
                 </Text>
                 <Text dimColor>· / for commands · esc to undo</Text>
               </>

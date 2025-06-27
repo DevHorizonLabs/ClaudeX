@@ -49,7 +49,7 @@ export function Logo({
       >
         <Text>
           <Text color={theme.claude}>✻</Text> Welcome to{' '}
-          <Text bold>{PRODUCT_NAME}</Text> <Text>research preview!</Text>
+          <Text bold>{PRODUCT_NAME}!</Text>
         </Text>
         <AsciiLogo />
 

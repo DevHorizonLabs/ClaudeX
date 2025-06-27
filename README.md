@@ -1,5 +1,16 @@
-# ANON KODE
+# CLAUDEX
 
+> **声明**
+> 
+> 1. 本项目基于 [https://github.com/dnakov/anon-kode](https://github.com/dnakov/anon-kode) 0.0.53 版本进一步开发。
+> 
+> 2. 为什么要自己做呢? fk cursor/fk cc。
+> 
+> 3. 本项目目标是支持 oneapi/newapi 转化出来的 openai 兼容的强大模型，能自由使用 free api~
+>
+> 4. 为什么要改原有项目名称为 ClaudeX？因为一些不可描述的原因，防止和谐，所以替换了名称。
+>
+> 5. 个人愿景：在 AI 编程时代，开发一个自己愿意天天使用，且不受商业 AI IDE 限制的软件，吃自己的 dog food。该软件由 ClaudeX 维护~
 
 https://github.com/user-attachments/assets/7a9253a7-8bb0-40d5-a3f3-5e6096d7c789
 

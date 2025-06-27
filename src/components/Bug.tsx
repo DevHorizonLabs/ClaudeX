@@ -26,8 +26,7 @@ type Props = {
 type Step = 'userInput' | 'consent' | 'submitting' | 'done'
 
 type FeedbackData = {
-  // Removing because of privacy concerns. Add this back in when we have a more
-  // robust tool for viewing feedback data that can de-identify users
+  // 由于隐私考虑而移除。当我们有更健全的反馈数据查看工具可以去识别用户身份时再添加回来
   // user_id: string
   // session_id: string
   message_count: number
@@ -102,16 +101,16 @@ export function Bug({ onDone }: Props): React.ReactNode {
     //   setStep('done')
     // } else {
     //   console.log(result)
-    //   setError('Could not submit feedback. Please try again later.')
+    //   setError('无法提交反馈。请稍后再试。')
     //   setStep('userInput')
     // }
   }, [description, envInfo.isGit, messages])
 
   useInput((input, key) => {
-    // Allow any key press to close the dialog when done or when there's an error
+    // 当完成或出现错误时，允许任何按键关闭对话框
     // if (step === 'done') {
     //   if (key.return && feedbackId && title) {
-    //     // Open GitHub issue URL when Enter is pressed
+    //     // 按下回车键时打开GitHub问题URL
     //     const issueUrl = createGitHubIssueUrl(feedbackId, title, description)
     //     void openBrowser(issueUrl)
     //   }
@@ -120,12 +119,12 @@ export function Bug({ onDone }: Props): React.ReactNode {
     // }
 
     if (error) {
-      onDone('<bash-stderr>Error submitting bug report</bash-stderr>')
+      onDone('<bash-stderr>提交错误报告时出错</bash-stderr>')
       return
     }
 
     if (key.escape) {
-      onDone('<bash-stderr>Bug report cancelled</bash-stderr>')
+      onDone('<bash-stderr>错误报告已取消</bash-stderr>')
       return
     }
 
@@ -136,7 +135,7 @@ export function Bug({ onDone }: Props): React.ReactNode {
         description,
       )
       void openBrowser(issueUrl)
-      onDone('<bash-stdout>Bug report submitted</bash-stdout>')
+      onDone('<bash-stdout>错误报告已提交</bash-stdout>')
     }
   })
 
@@ -153,12 +152,12 @@ export function Bug({ onDone }: Props): React.ReactNode {
         gap={1}
       >
         <Text bold color={theme.permission}>
-          Submit Bug Report
+          提交错误报告
         </Text>
         {step === 'userInput' && (
           <Box flexDirection="column" gap={1}>
             <Text>
-              Describe the issue below and copy/paste any errors you see:
+              在下面描述问题并复制/粘贴您看到的任何错误信息：
             </Text>
             <TextInput
               value={description}
@@ -166,7 +165,7 @@ export function Bug({ onDone }: Props): React.ReactNode {
               columns={textInputColumns}
               onSubmit={() => setStep('consent')}
               onExitMessage={() =>
-                onDone('<bash-stderr>Bug report cancelled</bash-stderr>')
+                onDone('<bash-stderr>错误报告已取消</bash-stderr>')
               }
               cursorOffset={cursorOffset}
               onChangeCursorOffset={setCursorOffset}
@@ -174,7 +173,7 @@ export function Bug({ onDone }: Props): React.ReactNode {
             {error && (
               <Box flexDirection="column" gap={1}>
                 <Text color="red">{error}</Text>
-                <Text dimColor>Press any key to close</Text>
+                <Text dimColor>按任意键关闭</Text>
               </Box>
             )}
           </Box>
@@ -182,20 +181,20 @@ export function Bug({ onDone }: Props): React.ReactNode {
 
         {step === 'consent' && (
           <Box flexDirection="column">
-            <Text>This report will include:</Text>
+            <Text>此报告将包括：</Text>
             <Box marginLeft={2} flexDirection="column">
               <Text>
-                - Your bug description: <Text dimColor>{description}</Text>
+                - 您的错误描述: <Text dimColor>{description}</Text>
               </Text>
               <Text>
-                - Environment info:{' '}
+                - 环境信息:{' '}
                 <Text dimColor>
                   {env.platform}, {env.terminal}, v{MACRO.VERSION}
                 </Text>
               </Text>
               {/* {envInfo.gitState && (
                 <Text>
-                  - Git repo metadata:{' '}
+                  - Git仓库元数据:{' '}
                   <Text dimColor>
                     {envInfo.gitState.branchName}
                     {envInfo.gitState.commitHash
@@ -204,24 +203,23 @@ export function Bug({ onDone }: Props): React.ReactNode {
                     {envInfo.gitState.remoteUrl
                       ? ` @ ${envInfo.gitState.remoteUrl}`
                       : ''}
-                    {!envInfo.gitState.isHeadOnRemote && ', not synced'}
-                    {!envInfo.gitState.isClean && ', has local changes'}
+                    {!envInfo.gitState.isHeadOnRemote && ', 未同步'}
+                    {!envInfo.gitState.isClean && ', 有本地更改'}
                   </Text>
                 </Text>
               )} */}
-              <Text>- Model settings (no api keys)</Text>
+              <Text>- 模型设置（不包含API密钥）</Text>
             </Box>
             {/* <Box marginTop={1}>
               <Text wrap="wrap" dimColor>
-                We will use your feedback to debug related issues or to improve{' '}
-                {PRODUCT_NAME}&apos;s functionality (eg. to reduce the risk of
-                bugs occurring in the future). Anthropic will not train
-                generative models using feedback from {PRODUCT_NAME}.
+                我们将使用您的反馈来调试相关问题或改进{' '}
+                {PRODUCT_NAME}的功能（例如，减少将来出现错误的风险）。
+                Anthropic不会使用来自{PRODUCT_NAME}的反馈来训练生成式模型。
               </Text>
             </Box>
             <Box marginTop={1}>
               <Text>
-                Press <Text bold>Enter</Text> to confirm and submit.
+                按<Text bold>回车键</Text>确认并提交。
               </Text>
             </Box> */}
           </Box>
@@ -229,19 +227,19 @@ export function Bug({ onDone }: Props): React.ReactNode {
 
         {step === 'submitting' && (
           <Box flexDirection="row" gap={1}>
-            <Text>Submitting report…</Text>
+            <Text>正在提交报告…</Text>
           </Box>
         )}
 
         {step === 'done' && (
           <Box flexDirection="column">
-            <Text color={getTheme().success}>Thank you for your report!</Text>
-            {feedbackId && <Text dimColor>Feedback ID: {feedbackId}</Text>}
+            <Text color={getTheme().success}>感谢您的报告！</Text>
+            {feedbackId && <Text dimColor>反馈ID: {feedbackId}</Text>}
             <Box marginTop={1}>
-              <Text>Press </Text>
-              <Text bold>Enter </Text>
+              <Text>按</Text>
+              <Text bold>回车键</Text>
               <Text>
-                to also create a GitHub issue, or any other key to close.
+                创建GitHub问题，或按任意其他键关闭。
               </Text>
             </Box>
           </Box>
@@ -251,11 +249,11 @@ export function Bug({ onDone }: Props): React.ReactNode {
       <Box marginLeft={3}>
         <Text dimColor>
           {exitState.pending ? (
-            <>Press {exitState.keyName} again to exit</>
+            <>再次按 {exitState.keyName} 退出</>
           ) : step === 'userInput' ? (
-            <>Enter to continue · Esc to cancel</>
+            <>回车键继续 · Esc键取消</>
           ) : step === 'consent' ? (
-            <>Enter to open browser to create GitHub issue · Esc to cancel</>
+            <>回车键打开浏览器创建GitHub问题 · Esc键取消</>
           ) : null}
         </Text>
       </Box>
@@ -270,25 +268,25 @@ function createGitHubIssueUrl(
 ): string {
   const globalConfig = getGlobalConfig()
   const body = encodeURIComponent(`
-## Bug Description
+## 错误描述
 ${description}
 
-## Environment Info
-- Platform: ${env.platform}
-- Terminal: ${env.terminal}
-- Version: ${MACRO.VERSION || 'unknown'}
+## 环境信息
+- 平台: ${env.platform}
+- 终端: ${env.terminal}
+- 版本: ${MACRO.VERSION || '未知'}
 
-## Models
-- Large
-    - baseURL: ${globalConfig.largeModelBaseURL}
-    - model: ${globalConfig.largeModelName}
-    - maxTokens: ${globalConfig.largeModelMaxTokens}
-    - reasoning effort: ${globalConfig.largeModelReasoningEffort}
-- Small
-    - baseURL: ${globalConfig.smallModelBaseURL}
-    - model: ${globalConfig.smallModelName}
-    - maxTokens: ${globalConfig.smallModelMaxTokens}
-    - reasoning effort: ${globalConfig.smallModelReasoningEffort}
+## 模型
+- 大模型
+    - 基础URL: ${globalConfig.largeModelBaseURL}
+    - 模型: ${globalConfig.largeModelName}
+    - 最大令牌数: ${globalConfig.largeModelMaxTokens}
+    - 推理努力值: ${globalConfig.largeModelReasoningEffort}
+- 小模型
+    - 基础URL: ${globalConfig.smallModelBaseURL}
+    - 模型: ${globalConfig.smallModelName}
+    - 最大令牌数: ${globalConfig.smallModelMaxTokens}
+    - 推理努力值: ${globalConfig.smallModelReasoningEffort}
 `)
   return `${GITHUB_ISSUES_REPO_URL}/new?title=${encodeURIComponent(title)}&body=${body}&labels=user-reported,bug`
 }
@@ -296,16 +294,16 @@ ${description}
 async function generateTitle(description: string): Promise<string> {
   const response = await queryHaiku({
     systemPrompt: [
-      'Generate a concise issue title (max 80 chars) that captures the key point of this feedback. Do not include quotes or prefixes like "Feedback:" or "Issue:". If you cannot generate a title, just use "User Feedback".',
+      '生成一个简洁的问题标题（最多80个字符），捕捉这个反馈的要点。不要包含引号或前缀，如"反馈："或"问题："。如果无法生成标题，请使用"用户反馈"。',
     ],
     userPrompt: description,
   })
   const title =
     response.message.content[0]?.type === 'text'
       ? response.message.content[0].text
-      : 'Bug Report'
+      : '错误报告'
   if (title.startsWith(API_ERROR_MESSAGE_PREFIX)) {
-    return `Bug Report: ${description.slice(0, 60)}${description.length > 60 ? '...' : ''}`
+    return `错误报告: ${description.slice(0, 60)}${description.length > 60 ? '...' : ''}`
   }
   return title
 }
@@ -340,16 +338,16 @@ async function submitFeedback(
   //     if (result?.feedback_id) {
   //       return { success: true, feedbackId: result.feedback_id }
   //     }
-  //     logError('Failed to submit feedback: request did not return feedback_id')
+  //     logError('提交反馈失败：请求未返回feedback_id')
   //     return { success: false }
   //   }
 
-  //   logError('Failed to submit feedback:' + response.status)
+  //   logError('提交反馈失败：' + response.status)
   //   return { success: false }
   // } catch (err) {
   //   logError(
-  //     'Error submitting feedback: ' +
-  //       (err instanceof Error ? err.message : 'Unknown error'),
+  //     '提交反馈时出错：' +
+  //       (err instanceof Error ? err.message : '未知错误'),
   //   )
   //   return { success: false }
   // }
