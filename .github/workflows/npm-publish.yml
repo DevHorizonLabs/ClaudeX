@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (optional)'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   build-and-publish:
