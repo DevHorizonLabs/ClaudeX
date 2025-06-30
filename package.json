@@ -1,23 +1,23 @@
 {
-  "name": "anon-kode",
-  "version": "0.0.54",
+  "name": "@devhorizonlabs/claudex",
+  "version": "1.0.0",
   "bin": {
-    "kode": "cli.mjs"
+    "claudex": "cli.mjs"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "type": "module",
-  "author": "Anon Kode <anon@kode.com>",
+  "author": "devhorizonlabs <code@io404.net>",
   "license": "",
-  "description": "Use Anon Kode, Anon's AI assistant, right from your terminal. Anon Kode can understand your codebase, edit files, run terminal commands, and handle entire workflows for you.",
-  "homepage": "https://github.com/dnakov/anon-kode",
+  "description": "Use Claude, Claude's AI assistant, right from your terminal. Claude can understand your codebase, edit files, run terminal commands, and handle entire workflows for you.",
+  "homepage": "https://github.com/DevHorizonLabs/ClaudeX",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dnakov/anon-kode.git"
+    "url": "https://github.com/DevHorizonLabs/claudex.git"
   },
   "bugs": {
-    "url": "https://github.com/dnakov/anon-kode/issues"
+    "url": "https://github.com/DevHorizonLabs/claudex/issues"
   },
   "files": [
     "cli.mjs",
