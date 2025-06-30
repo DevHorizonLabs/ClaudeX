@@ -1,0 +1,7 @@
+[build]
+target = "node"
+jsx = "react" # "react" 是 "react-jsx" 的简写，它会自动设置 factory 和 fragment
+
+# 或者更明确地写：
+# jsxFactory = "React.createElement"
+# jsxFragment = "React.Fragment"

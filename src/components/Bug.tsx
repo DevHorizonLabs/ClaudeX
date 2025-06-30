@@ -156,9 +156,7 @@ export function Bug({ onDone }: Props): React.ReactNode {
         </Text>
         {step === 'userInput' && (
           <Box flexDirection="column" gap={1}>
-            <Text>
-              在下面描述问题并复制/粘贴您看到的任何错误信息：
-            </Text>
+            <Text>在下面描述问题并复制/粘贴您看到的任何错误信息：</Text>
             <TextInput
               value={description}
               onChange={setDescription}
@@ -238,9 +236,7 @@ export function Bug({ onDone }: Props): React.ReactNode {
             <Box marginTop={1}>
               <Text>按</Text>
               <Text bold>回车键</Text>
-              <Text>
-                创建GitHub问题，或按任意其他键关闭。
-              </Text>
+              <Text>创建GitHub问题，或按任意其他键关闭。</Text>
             </Box>
           </Box>
         )}
