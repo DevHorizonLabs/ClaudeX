@@ -24,13 +24,12 @@ import terminalSetup, {
   isShiftEnterKeyBindingInstalled,
   handleHashCommand,
 } from '../commands/terminalSetup'
+import { queryHaiku } from '../services/claude'
 
 // Async function to interpret the '#' command input using AI
 async function interpretHashCommand(input: string): Promise<string> {
   // Use the AI to interpret the input
   try {
-    const { queryHaiku } = await import('../services/claude')
-
     // Create a prompt for the model to interpret the hash command
     const systemPrompt = [
       "You're helping the user structure notes that will be added to their CLAUDEX.md file.",

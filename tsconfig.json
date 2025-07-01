@@ -3,11 +3,8 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "bundler",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "preserveSymlinks": false,
     "esModuleInterop": true,
     "strict": false,
     "noImplicitAny": false,
