@@ -12,6 +12,18 @@
 >
 > 5. 个人愿景：在 AI 编程时代，开发一个自己愿意天天使用，且不受商业 AI IDE 限制的软件，吃自己的 dog food。该软件由 ClaudeX 维护~
 
+## 开始使用
+
+安装 ClaudeX：
+```
+npm install -g @devhorizonlabs/claudex
+```
+
+导航到你的项目目录并运行：
+```
+claudex
+```
+
 https://github.com/user-attachments/assets/7a9253a7-8bb0-40d5-a3f3-5e6096d7c789
 
 
